@@ -1,20 +1,18 @@
-import { loadArenaDataFromFile } from '@/features/arena/api/service';
+'use client';
+import { useEffect, useState } from 'react';
 import { ContactsClient } from '@/features/arena/components/contacts-client';
+import { getArenaData } from '@/features/arena/api/service';
+import type { ArenaClient } from '@/features/arena/api/types';
 
-export const metadata = {
-  title: 'Arena Analytics : Contacts'
-};
+export default function ContactsPage() {
+  const [clients, setClients] = useState<ArenaClient[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function ContactsPage() {
-  let clients = null;
-  let error = null;
-
-  try {
-    const data = await loadArenaDataFromFile();
-    clients = data.clients || [];
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to load contacts';
-  }
+  useEffect(() => {
+    getArenaData()
+      .then((d) => setClients(d?.clients ?? []))
+      .catch((e) => setError(e.message));
+  }, []);
 
   return <ContactsClient clients={clients} error={error} />;
 }

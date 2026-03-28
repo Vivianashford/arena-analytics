@@ -1,25 +1,23 @@
-import {
-  loadArenaDataFromFile,
-  loadContentPerformanceFromFile
-} from '@/features/arena/api/service';
+'use client';
+import { useEffect, useState } from 'react';
 import { AnalyticsClient } from '@/features/arena/components/analytics-client';
+import { getArenaData, getContentPerformance } from '@/features/arena/api/service';
+import type { ArenaData, ContentPerformance } from '@/features/arena/api/types';
 
-export const metadata = {
-  title: 'Arena Analytics : Website Analytics'
-};
+export default function AnalyticsPage() {
+  const [data, setData] = useState<ArenaData | null>(null);
+  const [content, setContent] = useState<ContentPerformance | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function AnalyticsPage() {
-  let analytics = null;
-  let content = null;
-  let error = null;
+  useEffect(() => {
+    Promise.all([getArenaData().catch(() => null), getContentPerformance().catch(() => null)]).then(
+      ([d, c]) => {
+        if (d) setData(d);
+        else setError('Failed to load analytics data');
+        if (c) setContent(c);
+      }
+    );
+  }, []);
 
-  try {
-    const data = await loadArenaDataFromFile();
-    analytics = data.analytics || null;
-    content = await loadContentPerformanceFromFile();
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to load analytics';
-  }
-
-  return <AnalyticsClient analytics={analytics} content={content} error={error} />;
+  return <AnalyticsClient analytics={data?.analytics ?? null} content={content} error={error} />;
 }

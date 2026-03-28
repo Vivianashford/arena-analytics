@@ -1,15 +1,18 @@
-import { loadArenaDataFromFile } from '@/features/arena/api/service';
+'use client';
+import { useEffect, useState } from 'react';
 import { OverviewClient } from '@/features/arena/components/overview-client';
+import { getArenaData } from '@/features/arena/api/service';
+import type { ArenaData } from '@/features/arena/api/types';
 
-export default async function OverviewPage() {
-  let data = null;
-  let error = null;
+export default function OverviewPage() {
+  const [data, setData] = useState<ArenaData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  try {
-    data = await loadArenaDataFromFile();
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to load data';
-  }
+  useEffect(() => {
+    getArenaData()
+      .then((d) => setData(d))
+      .catch((e) => setError(e.message));
+  }, []);
 
   return <OverviewClient initialData={data} error={error} />;
 }

@@ -1,19 +1,18 @@
-import { loadArenaDataFromFile } from '@/features/arena/api/service';
+'use client';
+import { useEffect, useState } from 'react';
 import { PipelineClient } from '@/features/arena/components/pipeline-client';
+import { getArenaData } from '@/features/arena/api/service';
+import type { ArenaData } from '@/features/arena/api/types';
 
-export const metadata = {
-  title: 'Arena Analytics : Pipeline'
-};
+export default function PipelinePage() {
+  const [data, setData] = useState<ArenaData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function PipelinePage() {
-  let data = null;
-  let error = null;
-
-  try {
-    data = await loadArenaDataFromFile();
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to load data';
-  }
+  useEffect(() => {
+    getArenaData()
+      .then((d) => setData(d))
+      .catch((e) => setError(e.message));
+  }, []);
 
   return <PipelineClient initialData={data} error={error} />;
 }
