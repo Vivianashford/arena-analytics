@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+3:I[4322,["/arena-analytics/_next/static/chunks/0xiqt0ed2rd-9.js","/arena-analytics/_next/static/chunks/138gsxw38bez5.js","/arena-analytics/_next/static/chunks/14km434as2012.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+0:{"rsc":["$","$1","c",{"children":["$L2",null,["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"5DrSUeYrxzhfg3qBKhaLA"}
+5:null
+2:E{"digest":"NEXT_REDIRECT;replace;/dashboard/overview;307;"}
