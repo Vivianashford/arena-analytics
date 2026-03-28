@@ -8,8 +8,8 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn Dashboard Starter',
-  description: 'Basic dashboard with Next.js and Shadcn',
+  title: 'Arena Analytics',
+  description: 'The Arena Partners - Analytics Dashboard',
   robots: {
     index: false,
     follow: false
@@ -17,7 +17,6 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  // Persisting the sidebar state in the cookie.
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
   return (
@@ -27,9 +26,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <AppSidebar />
           <SidebarInset>
             <Header />
-            {/* page main content */}
             {children}
-            {/* page main content ends */}
           </SidebarInset>
           <InfoSidebar side='right' />
         </InfobarProvider>
