@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import type { ArenaData } from '@/features/arena/api/types';
-import { getStageDisplayName } from '@/features/arena/api/types';
 import {
   BarChart,
   Bar,
@@ -23,13 +22,18 @@ import {
   Tooltip,
   ResponsiveContainer,
   AreaChart,
-  Area
+  Area,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 
 interface OverviewClientProps {
   initialData: ArenaData | null;
   error: string | null;
 }
+
+const COLORS = ['#C9A84C', '#6366f1', '#22c55e', '#ef4444', '#f59e0b', '#8b5cf6'];
 
 function IntegrationStatusBar({ data }: { data: ArenaData | null }) {
   const integrations = [
@@ -40,7 +44,9 @@ function IntegrationStatusBar({ data }: { data: ArenaData | null }) {
       connected: (data?.clients?.length ?? 0) > 0 || (data?.contacts?.total ?? 0) > 0,
       icon: (data?.clients?.length ?? 0) > 0 || (data?.contacts?.total ?? 0) > 0 ? '🟢' : '🔴'
     },
-    { name: 'Facebook Ads', connected: false, icon: '⚪' }
+    { name: 'LinkedIn', connected: true, icon: '🟢' },
+    { name: 'Facebook', connected: true, icon: '🟢' },
+    { name: 'Instantly', connected: false, icon: '⚪' }
   ];
 
   return (
@@ -62,14 +68,14 @@ function IntegrationStatusBar({ data }: { data: ArenaData | null }) {
 
 function FunnelChart({ data }: { data: ArenaData }) {
   const funnelData = [
-    { stage: 'VSL Lead', count: data.funnel['vsl-lead'] },
-    { stage: 'Watched 25%', count: data.funnel['vsl-watched-25'] },
-    { stage: 'Watched 50%', count: data.funnel['vsl-watched-50'] },
-    { stage: 'Watched 75%', count: data.funnel['vsl-watched-75'] },
-    { stage: 'Watched 100%', count: data.funnel['vsl-watched-100'] },
-    { stage: 'Booked', count: data.funnel['vsl-booked'] },
-    { stage: 'NDA Signed', count: data.funnel['nda-signed'] },
-    { stage: 'Info Submitted', count: data.funnel['company-info-submitted'] }
+    { stage: 'VSL Lead', count: data.funnel['vsl-lead'] ?? 0 },
+    { stage: 'Watched 25%', count: data.funnel['vsl-watched-25'] ?? 0 },
+    { stage: 'Watched 50%', count: data.funnel['vsl-watched-50'] ?? 0 },
+    { stage: 'Watched 75%', count: data.funnel['vsl-watched-75'] ?? 0 },
+    { stage: 'Watched 100%', count: data.funnel['vsl-watched-100'] ?? 0 },
+    { stage: 'Booked', count: data.funnel['vsl-booked'] ?? 0 },
+    { stage: 'NDA Signed', count: data.funnel['nda-signed'] ?? 0 },
+    { stage: 'Info Submitted', count: data.funnel['company-info-submitted'] ?? 0 }
   ];
 
   return (
@@ -177,6 +183,69 @@ function TrafficChart({ data }: { data: ArenaData }) {
   );
 }
 
+function TrafficSourcesChart({ data }: { data: ArenaData }) {
+  const sources = data.analytics?.traffic_sources || [];
+  if (sources.length === 0) return null;
+
+  const categories: Record<string, number> = {};
+  for (const src of sources) {
+    const medium =
+      src.medium === '(none)'
+        ? 'Direct'
+        : src.medium === 'organic'
+          ? 'Organic'
+          : src.medium === 'referral'
+            ? 'Referral'
+            : src.medium === 'social'
+              ? 'Social'
+              : src.medium === 'cpc'
+                ? 'Paid'
+                : 'Other';
+    categories[medium] = (categories[medium] || 0) + src.sessions;
+  }
+
+  const chartData = Object.entries(categories)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription>Traffic Sources</CardDescription>
+        <CardTitle className='text-lg'>By Medium</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width='100%' height={300}>
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx='50%'
+              cy='50%'
+              innerRadius={60}
+              outerRadius={100}
+              paddingAngle={2}
+              dataKey='value'
+              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            >
+              {chartData.map((_entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                color: 'hsl(var(--foreground))'
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function OverviewClient({ initialData, error }: OverviewClientProps) {
   if (error) {
     return (
@@ -193,21 +262,15 @@ export function OverviewClient({ initialData, error }: OverviewClientProps) {
   if (!initialData) {
     return (
       <PageContainer>
-        <div className='text-muted-foreground flex flex-1 items-center justify-center py-20'>
-          No data available
+        <div className='text-muted-foreground flex flex-1 flex-col items-center justify-center gap-2 py-20'>
+          <Icons.spinner className='size-8 animate-spin' />
+          <span>Loading dashboard data...</span>
         </div>
       </PageContainer>
     );
   }
 
   const data = initialData;
-
-  // Compute pipeline stage counts from clients
-  const stageCounts: Record<string, number> = {};
-  for (const client of data.clients || []) {
-    const displayName = getStageDisplayName(client.stage);
-    stageCounts[displayName] = (stageCounts[displayName] || 0) + 1;
-  }
 
   return (
     <PageContainer>
@@ -221,10 +284,11 @@ export function OverviewClient({ initialData, error }: OverviewClientProps) {
 
         <IntegrationStatusBar data={data} />
 
+        {/* Row 1: CRM KPIs */}
         <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Total Leads</CardDescription>
+              <CardDescription>Total Contacts</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 {data.contacts?.total ?? '—'}
               </CardTitle>
@@ -246,9 +310,7 @@ export function OverviewClient({ initialData, error }: OverviewClientProps) {
             <CardHeader>
               <CardDescription>Pipeline Value</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                {data.arena_pipeline?.total_value
-                  ? `$${data.arena_pipeline.total_value.toLocaleString()}`
-                  : '—'}
+                ${(data.arena_pipeline?.total_value ?? 0).toLocaleString()}
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -286,7 +348,30 @@ export function OverviewClient({ initialData, error }: OverviewClientProps) {
 
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Website Traffic</CardDescription>
+              <CardDescription>Real Contacts</CardDescription>
+              <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
+                {data.contacts?.real ?? '—'}
+              </CardTitle>
+              <CardAction>
+                <Badge variant='outline'>
+                  <Icons.user className='size-3' />
+                  verified
+                </Badge>
+              </CardAction>
+            </CardHeader>
+            <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+              <div className='text-muted-foreground'>
+                of {data.contacts?.total ?? 0} total contacts
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+
+        {/* Row 2: Traffic KPIs */}
+        <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
+          <Card className='@container/card'>
+            <CardHeader>
+              <CardDescription>Weekly Sessions</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 {data.analytics?.week?.sessions ?? '—'}
               </CardTitle>
@@ -303,12 +388,76 @@ export function OverviewClient({ initialData, error }: OverviewClientProps) {
               </div>
             </CardFooter>
           </Card>
+
+          <Card className='@container/card'>
+            <CardHeader>
+              <CardDescription>Weekly Users</CardDescription>
+              <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
+                {data.analytics?.week?.users ?? '—'}
+              </CardTitle>
+              <CardAction>
+                <Badge variant='outline'>
+                  <Icons.user className='size-3' />
+                  Unique
+                </Badge>
+              </CardAction>
+            </CardHeader>
+            <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+              <div className='text-muted-foreground'>
+                {data.analytics?.month?.users ?? '—'} this month
+              </div>
+            </CardFooter>
+          </Card>
+
+          <Card className='@container/card'>
+            <CardHeader>
+              <CardDescription>Pageviews</CardDescription>
+              <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
+                {data.analytics?.week?.pageviews ?? '—'}
+              </CardTitle>
+              <CardAction>
+                <Badge variant='outline'>
+                  <Icons.trendingUp className='size-3' />
+                  This week
+                </Badge>
+              </CardAction>
+            </CardHeader>
+            <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+              <div className='text-muted-foreground'>
+                Avg {data.analytics?.week?.avg_duration ? `${Math.round(data.analytics.week.avg_duration)}s` : '—'} duration
+              </div>
+            </CardFooter>
+          </Card>
+
+          <Card className='@container/card'>
+            <CardHeader>
+              <CardDescription>Bounce Rate</CardDescription>
+              <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
+                {data.analytics?.bounce_rate != null ? `${data.analytics.bounce_rate}%` : '—'}
+              </CardTitle>
+              <CardAction>
+                <Badge variant='outline'>
+                  <Icons.trendingUp className='size-3' />
+                  Site avg
+                </Badge>
+              </CardAction>
+            </CardHeader>
+            <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+              <div className='text-muted-foreground'>
+                {data.analytics?.week?.conversions ?? 0} conversions
+              </div>
+            </CardFooter>
+          </Card>
         </div>
 
+        {/* Charts */}
         <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
           <FunnelChart data={data} />
           <TrafficChart data={data} />
         </div>
+
+        {/* Traffic Sources */}
+        <TrafficSourcesChart data={data} />
       </div>
     </PageContainer>
   );

@@ -13,14 +13,6 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Pipeline',
-        url: '/dashboard/pipeline',
-        icon: 'kanban',
-        shortcut: ['p', 'p'],
-        isActive: false,
-        items: []
-      },
-      {
         title: 'Contacts',
         url: '/dashboard/contacts',
         icon: 'teams',
@@ -33,6 +25,14 @@ export const navGroups: NavGroup[] = [
         url: '/dashboard/analytics',
         icon: 'trendingUp',
         shortcut: ['a', 'a'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'SEO',
+        url: '/dashboard/seo',
+        icon: 'search',
+        shortcut: ['e', 'e'],
         isActive: false,
         items: []
       },

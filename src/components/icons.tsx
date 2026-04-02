@@ -6,6 +6,7 @@ import {
   IconBell,
   IconBold,
   IconBox,
+  IconMail,
   IconBrandGithub,
   IconBrandTwitter,
   IconBrightness,
@@ -148,6 +149,7 @@ export const Icons = {
   phone: IconPhone,
   video: IconVideo,
   send: IconSend,
+  mail: IconMail,
   paperclip: IconPaperclip,
 
   // Files

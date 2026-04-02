@@ -45,7 +45,20 @@ const COLORS = ['#C9A84C', '#6366f1', '#22c55e', '#ef4444', '#f59e0b', '#8b5cf6'
 
 function TrafficOverview({ analytics }: { analytics: AnalyticsData }) {
   return (
-    <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
+    <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5'>
+      <Card className={`${(analytics.realtime_users ?? 0) > 0 ? 'border-green-500/30 bg-green-500/5' : 'border-zinc-700/30'}`}>
+        <CardHeader>
+          <CardDescription className={(analytics.realtime_users ?? 0) > 0 ? 'text-green-400' : 'text-muted-foreground'}>Realtime</CardDescription>
+          <CardTitle className={`text-2xl tabular-nums ${(analytics.realtime_users ?? 0) > 0 ? 'text-green-400 animate-pulse' : 'text-muted-foreground'}`}>{analytics.realtime_users ?? 0}</CardTitle>
+        </CardHeader>
+        <CardFooter>
+          {(analytics.realtime_users ?? 0) > 0 ? (
+            <span className='flex items-center gap-1.5 text-xs text-green-400'><span className='inline-block h-2 w-2 animate-pulse rounded-full bg-green-400'></span>Live on site</span>
+          ) : (
+            <span className='text-muted-foreground text-xs'>No active users</span>
+          )}
+        </CardFooter>
+      </Card>
       <Card>
         <CardHeader>
           <CardDescription>Sessions (Week)</CardDescription>
@@ -90,7 +103,7 @@ function TrafficOverview({ analytics }: { analytics: AnalyticsData }) {
         </CardHeader>
         <CardFooter>
           <span className='text-muted-foreground text-xs'>
-            {analytics.realtime_users} active now
+            Avg duration {analytics.week?.avg_duration ? `${Math.round(analytics.week.avg_duration)}s` : '—'}
           </span>
         </CardFooter>
       </Card>
@@ -165,7 +178,6 @@ function TrafficSourcesChart({ analytics }: { analytics: AnalyticsData }) {
   const sources = analytics.traffic_sources || [];
   if (sources.length === 0) return null;
 
-  // Group into categories
   const categories: Record<string, number> = {};
   for (const src of sources) {
     const medium =
@@ -245,13 +257,240 @@ function TopPagesTable({ analytics }: { analytics: AnalyticsData }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {pages.slice(0, 15).map((page) => (
+            {pages.slice(0, 10).map((page) => (
               <TableRow key={page.page}>
                 <TableCell className='max-w-[300px] truncate font-mono text-sm'>
                   {page.page}
                 </TableCell>
                 <TableCell className='text-right tabular-nums'>{page.views}</TableCell>
                 <TableCell className='text-right tabular-nums'>{page.users}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TrafficSourcesTable({ analytics }: { analytics: AnalyticsData }) {
+  const sources = analytics.traffic_sources || [];
+  if (sources.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription>Traffic Sources</CardDescription>
+        <CardTitle className='text-lg'>Detailed Breakdown</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Source</TableHead>
+              <TableHead>Medium</TableHead>
+              <TableHead className='text-right'>Sessions</TableHead>
+              <TableHead className='text-right'>Users</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sources.map((src, i) => (
+              <TableRow key={`${src.source}-${src.medium}-${i}`}>
+                <TableCell className='text-sm'>{src.source}</TableCell>
+                <TableCell className='text-muted-foreground text-sm'>{src.medium}</TableCell>
+                <TableCell className='text-right tabular-nums'>{src.sessions}</TableCell>
+                <TableCell className='text-right tabular-nums'>{src.users}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DevicesChart({ analytics }: { analytics: AnalyticsData }) {
+  const devices = (analytics.devices || []) as Array<{ device: string; sessions: number }>;
+  if (devices.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription>Devices</CardDescription>
+        <CardTitle className='text-lg'>Desktop vs Mobile</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width='100%' height={250}>
+          <PieChart>
+            <Pie
+              data={devices.map((d) => ({ name: d.device, value: d.sessions }))}
+              cx='50%'
+              cy='50%'
+              innerRadius={50}
+              outerRadius={85}
+              paddingAngle={3}
+              dataKey='value'
+              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            >
+              {devices.map((_entry, index) => (
+                <Cell key={`device-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                color: 'hsl(var(--foreground))'
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LocationsTable({ analytics }: { analytics: AnalyticsData }) {
+  const locations = (analytics.locations || []) as Array<{ city: string; users: number; sessions: number }>;
+  if (locations.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription>Locations</CardDescription>
+        <CardTitle className='text-lg'>Top Cities</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>City</TableHead>
+              <TableHead className='text-right'>Users</TableHead>
+              <TableHead className='text-right'>Sessions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {locations.slice(0, 10).map((loc) => (
+              <TableRow key={loc.city}>
+                <TableCell className='text-sm'>{loc.city}</TableCell>
+                <TableCell className='text-right tabular-nums'>{loc.users}</TableCell>
+                <TableCell className='text-right tabular-nums'>{loc.sessions}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EventsTable({ analytics }: { analytics: AnalyticsData }) {
+  const events = (analytics.all_events || []) as Array<{ event: string; count: number }>;
+  if (events.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription>Events</CardDescription>
+        <CardTitle className='text-lg'>All Tracked Events</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Event</TableHead>
+              <TableHead className='text-right'>Count</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {events.map((evt) => (
+              <TableRow key={evt.event}>
+                <TableCell className='font-mono text-sm'>{evt.event}</TableCell>
+                <TableCell className='text-right tabular-nums'>{evt.count}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SiteFunnelChart({ analytics }: { analytics: AnalyticsData }) {
+  const funnel = analytics.funnel as Record<string, { views: number }> | undefined;
+  if (!funnel || Object.keys(funnel).length === 0) return null;
+
+  const funnelData = Object.entries(funnel)
+    .map(([page, info]) => ({
+      page: page.length > 25 ? page.slice(0, 25) + '...' : page,
+      views: typeof info === 'object' && info !== null ? (info as { views: number }).views : 0
+    }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 10);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription>Site Funnel</CardDescription>
+        <CardTitle className='text-lg'>Page Flow</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width='100%' height={300}>
+          <BarChart data={funnelData} layout='vertical' margin={{ left: 10 }}>
+            <CartesianGrid strokeDasharray='3 3' stroke='hsl(var(--border))' />
+            <XAxis type='number' stroke='hsl(var(--muted-foreground))' fontSize={12} />
+            <YAxis
+              dataKey='page'
+              type='category'
+              width={140}
+              stroke='hsl(var(--muted-foreground))'
+              fontSize={10}
+              tickLine={false}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                color: 'hsl(var(--foreground))'
+              }}
+            />
+            <Bar dataKey='views' fill='#C9A84C' radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BlogPerformance({ analytics }: { analytics: AnalyticsData }) {
+  const blog = analytics.blog as { total_views?: number; total_users?: number; articles?: Array<{ title: string; page: string; views: number; users: number }> } | undefined;
+  if (!blog || !blog.articles || blog.articles.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardDescription>Blog Performance</CardDescription>
+        <CardTitle className='text-lg'>
+          {blog.total_views ?? 0} views from {blog.total_users ?? 0} users
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Article</TableHead>
+              <TableHead className='text-right'>Views</TableHead>
+              <TableHead className='text-right'>Users</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {blog.articles.map((article) => (
+              <TableRow key={article.page}>
+                <TableCell className='max-w-[300px] truncate text-sm'>{article.title || article.page}</TableCell>
+                <TableCell className='text-right tabular-nums'>{article.views}</TableCell>
+                <TableCell className='text-right tabular-nums'>{article.users}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -324,8 +563,9 @@ export function AnalyticsClient({ analytics, content, error }: AnalyticsClientPr
   if (!analytics) {
     return (
       <PageContainer pageTitle='Analytics' pageDescription='Website & Content Analytics'>
-        <div className='text-muted-foreground flex items-center justify-center py-20'>
-          No analytics data available
+        <div className='text-muted-foreground flex flex-col items-center justify-center gap-2 py-20'>
+          <Icons.spinner className='size-8 animate-spin' />
+          <span>Loading analytics data...</span>
         </div>
       </PageContainer>
     );
@@ -336,10 +576,26 @@ export function AnalyticsClient({ analytics, content, error }: AnalyticsClientPr
       <div className='flex flex-col gap-6'>
         <TrafficOverview analytics={analytics} />
         <DailyTrafficChart analytics={analytics} />
+
         <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
           <TrafficSourcesChart analytics={analytics} />
-          <TopPagesTable analytics={analytics} />
+          <DevicesChart analytics={analytics} />
         </div>
+
+        <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+          <TopPagesTable analytics={analytics} />
+          <TrafficSourcesTable analytics={analytics} />
+        </div>
+
+        <SiteFunnelChart analytics={analytics} />
+
+        <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+          <LocationsTable analytics={analytics} />
+          <EventsTable analytics={analytics} />
+        </div>
+
+        <BlogPerformance analytics={analytics} />
+
         {content && <ContentPerformanceSection content={content} />}
       </div>
     </PageContainer>
