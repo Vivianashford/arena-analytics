@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Arena Analytics</title>
+  <script>
+    // GitHub Pages SPA redirect
+    // When a route 404s (browser back/refresh), redirect to the correct page
+    var path = window.location.pathname;
+    var basePath = '/arena-analytics';
+    
+    // If path starts with basePath, it's a valid route that just needs client-side handling
+    if (path.startsWith(basePath + '/dashboard')) {
+      // Redirect to the same path - GitHub Pages will serve index.html for exact matches
+      // but for client-side routes we need to handle it
+      var searchAndHash = window.location.search + window.location.hash;
+      window.location.replace(basePath + '/dashboard/overview' + searchAndHash);
+    } else if (path.startsWith(basePath)) {
+      window.location.replace(basePath + '/dashboard/overview');
+    } else {
+      window.location.replace(basePath + '/dashboard/overview');
+    }
+  </script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>
